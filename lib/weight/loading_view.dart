@@ -9,7 +9,7 @@ class LoadingDialog extends Dialog {
   @override
   Widget build(BuildContext context) {
     return new Material( //创建透明层
-      type: MaterialType.transparency, //透明类型
+      type: MaterialType.card, //透明类型
       child: new Center( //保证控件居中效果
         child: new SizedBox(
           width: 120.0,

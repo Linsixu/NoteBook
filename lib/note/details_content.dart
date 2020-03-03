@@ -12,6 +12,8 @@ import 'package:note_book/utils/show_dialog_helper.dart';
 import 'package:note_book/weight/fix_image.dart';
 import 'dart:convert' as convert;
 
+import 'package:note_book/weight/loading_view_tree.dart';
+
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
   final String title;
@@ -27,6 +29,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Selected selected;
   bool isload = false;
   String fileName;
+  bool isLoadingData = true;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +39,9 @@ class _MyHomePageState extends State<MyHomePage> {
       getDetailsData(fileName).then((data) {
         isload = true;
 //        Navigator.pop;
+        setState(() {
+          isLoadingData = false;
+        });
         if (data.isNotEmpty) {
           try {
             final map = json.decode(data);
@@ -55,51 +61,55 @@ class _MyHomePageState extends State<MyHomePage> {
         appBar: AppBar(
           title: Text(widget.title),
         ),
-        body: Container(
-          child: ListView.builder(
-            itemCount: textList.size,
-            itemBuilder: (BuildContext context, int position) {
-              textList.list[position].key ??= CustomTypeList();
-              if (textList.list[position].key.flag == TypeFlag.text) {
-                return TextItem(position, textList.list[position],
-                    (index, controller) {
-                  currentPosition = index;
-                  currentController = controller;
-                });
-              } else if (textList.list[position].key.flag == TypeFlag.image) {
-                return Stack(
-                  children: <Widget>[
-                    Container(
-                      child: Image(
-                          image: FileImageEx(
-                              File(textList.list[position].key.imageUrl))),
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: IconButton(
-                          icon: Icon(Icons.cancel),
-                          iconSize: 35,
-                          color: Colors.black38,
-                          onPressed: () {
-                            deleteImage(textList.list[position].key.imageUrl)
-                                .then((result) {
-                              if (result) {
-                                showToast("删除成功");
-                                textList.remove(position);
-                                setState(() {});
-                              } else {
-                                showToast("删除失败");
-                              }
-                            });
-                          }),
-                    ),
-                  ],
-                );
-              }
-            },
-            scrollDirection: Axis.vertical,
-          ),
+        body: MyLoadingWidget(
+          isShow: isLoadingData,
+          text: "正在从本地读取数据",
+          child: Container(
+            child: ListView.builder(
+              itemCount: textList.size,
+              itemBuilder: (BuildContext context, int position) {
+                textList.list[position].key ??= CustomTypeList();
+                if (textList.list[position].key.flag == TypeFlag.text) {
+                  return TextItem(position, textList.list[position],
+                          (index, controller) {
+                        currentPosition = index;
+                        currentController = controller;
+                      });
+                } else if (textList.list[position].key.flag == TypeFlag.image) {
+                  return Stack(
+                    children: <Widget>[
+                      Container(
+                        child: Image(
+                            image: FileImageEx(
+                                File(textList.list[position].key.imageUrl))),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: IconButton(
+                            icon: Icon(Icons.cancel),
+                            iconSize: 35,
+                            color: Colors.black38,
+                            onPressed: () {
+                              deleteImage(textList.list[position].key.imageUrl)
+                                  .then((result) {
+                                if (result) {
+                                  showToast("删除成功");
+                                  textList.remove(position);
+                                  setState(() {});
+                                } else {
+                                  showToast("删除失败");
+                                }
+                              });
+                            }),
+                      ),
+                    ],
+                  );
+                }
+              },
+              scrollDirection: Axis.vertical,
+            ),
+          )
         ),
         floatingActionButton: Column(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -181,15 +191,20 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<bool> _requestPop() {
+    String remind;
     showLoadingDialog(context, "正在保存……");
     String contents = convert.jsonEncode(textList.toJson());
     saveDetailsData(contents, fileName).then((result) {
       Navigator.of(context).pop();
       if (result) {
-        showToast("保存成功");
+        remind = "保存成功";
+
       } else {
-        showToast("保存失败");
+        remind = "保存失败";
       }
+      showToast(remind).then((result){
+        Navigator.of(context).pop();
+      });
     });
     return new Future.value(false);
   }
