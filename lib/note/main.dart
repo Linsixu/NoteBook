@@ -3,11 +3,13 @@ import 'dart:convert' as convert;
 
 import 'package:flutter/material.dart';
 import 'package:note_book/file/title_function.dart';
+import 'package:note_book/model/selected_position.dart';
 import 'package:note_book/notify/local_data_notify.dart';
 import 'package:note_book/utils/show_dialog_helper.dart';
 import 'package:provider/provider.dart';
 
-import 'model/directory_list.dart';
+import '../model/directory_list.dart';
+import 'details_content.dart';
 
 void main() {
   final localListData = LocalListDataModel();
@@ -73,7 +75,15 @@ class _MyNoteListWidgetState extends State<NoteListWidget> {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () {
-                  showToast('${_localList.directory.title[index]}');
+                  String fileName = _localList.directory.title[index];
+                  Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (context) => MyHomePage(title: fileName),
+                          settings: RouteSettings(
+                              arguments: Selected(index, fileName),
+                          )
+                      ),
+                  );
                 },
                 child: Padding(
                     padding: const EdgeInsets.all(8),
@@ -82,12 +92,12 @@ class _MyNoteListWidgetState extends State<NoteListWidget> {
               );
             },
             separatorBuilder: (BuildContext context, int index) =>
-                const Divider(),
+            const Divider(),
             itemCount: _localList.directory.title.length),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          if(!isShowFileDialog){
+          if (!isShowFileDialog) {
             isShowFileDialog = true;
             showNewFileDialog(context).then((fileName) async {
               if (fileName.isNotEmpty) {

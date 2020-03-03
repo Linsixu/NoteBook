@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:note_book/file/file_function.dart';
+import 'package:note_book/model/selected_position.dart';
 import 'package:note_book/utils/custom_type_list.dart';
 import 'package:note_book/utils/rich_text_list.dart';
 
@@ -19,6 +20,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    Selected selected = ModalRoute.of(context).settings.arguments;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -30,10 +32,10 @@ class _MyHomePageState extends State<MyHomePage> {
             textList.list[position].key ??= CustomTypeList();
             if (textList.list[position].key.flag == TypeFlag.text) {
               return TextItem(position, textList.list[position],
-                      (index, controller) {
-                    currentPosition = index;
-                    currentController = controller;
-                  });
+                  (index, controller) {
+                currentPosition = index;
+                currentController = controller;
+              });
             } else if (textList.list[position].key.flag == TypeFlag.image) {
               return Stack(
                 children: <Widget>[
@@ -66,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
             heroTag: "single",
             onPressed: () {
               if (currentController == null) return;
-              _takePhoto();
+              _takePhoto(selected.fileName, selected.position);
             },
             tooltip: '相机',
             child: Icon(Icons.camera),
@@ -84,10 +86,11 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  _takePhoto() async {
+  _takePhoto(String fileName, int position) async {
+    String saveFileName = fileName + '-' + position.toString();
     var image = await ImagePicker.pickImage(source: ImageSource.camera);
     if (image != null) {
-      saveImage(image, "test", currentPosition.toString()).then((file) {
+      saveImage(image, saveFileName, currentPosition.toString()).then((file) {
         if (file != null) {
           textList.insertOne(
               currentPosition,
