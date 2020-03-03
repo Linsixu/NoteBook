@@ -19,9 +19,27 @@ Future<String> _getDirectoryPath() async {
 Future<File> saveImage(File file, String fileName, String position) async {
   Future<File> result;
   await _getImageFileName().then((directory) {
-    result = file.copy('$directory/$fileName-$position.png');
+    result = file.copy(getImagePath(directory, fileName, position));
   });
   return result;
+}
+
+Future<bool> deleteImage(String fileName, String position) async {
+  String directory = await _getImageFileName();
+  File file = File(getImagePath(directory, fileName, position));
+  bool result = await file.exists();
+  bool deleteResult = false;
+  if (result) {
+    await file.delete();
+    deleteResult = true;
+  } else {
+    deleteResult = false;
+  }
+  return deleteResult;
+}
+
+String getImagePath(String directory, String fileName, String position) {
+  return '$directory/$fileName-$position.png';
 }
 
 Future<String> _getImageFileName() async {

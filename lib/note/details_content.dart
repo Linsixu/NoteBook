@@ -4,6 +4,8 @@ import 'package:note_book/file/file_function.dart';
 import 'package:note_book/model/selected_position.dart';
 import 'package:note_book/utils/custom_type_list.dart';
 import 'package:note_book/utils/rich_text_list.dart';
+import 'package:note_book/utils/show_dialog_helper.dart';
+import 'package:note_book/weight/fix_image.dart';
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -21,6 +23,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     Selected selected = ModalRoute.of(context).settings.arguments;
+    String fileName = selected.fileName + "-" + selected.position.toString();
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -40,7 +43,9 @@ class _MyHomePageState extends State<MyHomePage> {
               return Stack(
                 children: <Widget>[
                   Container(
-                    child: Image.file(textList.list[position].key.imageUrl),
+                    child: Image(
+                        image:
+                            FileImageEx(textList.list[position].key.imageUrl)),
                   ),
                   Positioned(
                     top: 0,
@@ -48,10 +53,21 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: IconButton(
                         icon: Icon(Icons.cancel),
                         iconSize: 35,
-                        color: Colors.red,
+                        color: Colors.black38,
                         onPressed: () {
-                          textList.remove(position);
-                          setState(() {});
+                          deleteImage(
+                                  fileName,
+                                  textList.list[position].key.actualIndex
+                                      .toString())
+                              .then((result) {
+                            if (result) {
+                              showToast("删除成功");
+                              textList.remove(position);
+                              setState(() {});
+                            } else {
+                              showToast("删除失败");
+                            }
+                          });
                         }),
                   ),
                 ],
@@ -68,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
             heroTag: "single",
             onPressed: () {
               if (currentController == null) return;
-              _takePhoto(selected.fileName, selected.position);
+              _takePhoto(fileName);
             },
             tooltip: '相机',
             child: Icon(Icons.camera),
@@ -76,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
           FloatingActionButton(
             heroTag: "multi",
             onPressed: () {
-              _openGallery();
+              _openGallery(fileName);
             },
             tooltip: '图库',
             child: Icon(Icons.photo),
@@ -86,36 +102,45 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  _takePhoto(String fileName, int position) async {
-    String saveFileName = fileName + '-' + position.toString();
+  _takePhoto(String fileName) async {
     var image = await ImagePicker.pickImage(source: ImageSource.camera);
     if (image != null) {
-      saveImage(image, saveFileName, currentPosition.toString()).then((file) {
+      saveImage(image, fileName, (currentPosition + 1).toString()).then((file) {
         if (file != null) {
           textList.insertOne(
               currentPosition,
               getBeforeText(currentController),
               getSelectText(currentController),
               getAfterText(currentController),
-              CustomTypeList(flag: TypeFlag.image, imageUrl: file));
+              CustomTypeList(
+                  flag: TypeFlag.image,
+                  imageUrl: file,
+                  actualIndex: currentPosition + 1));
           setState(() {});
         }
       });
     }
   }
 
-  _openGallery() async {
+  _openGallery(String fileName) async {
     var image = await ImagePicker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
     if (currentController == null) return;
     if (currentController == null) return;
-    textList.insertOne(
-        currentPosition,
-        getBeforeText(currentController),
-        getSelectText(currentController),
-        getAfterText(currentController),
-        CustomTypeList(flag: TypeFlag.image, imageUrl: image));
-    setState(() {});
+    saveImage(image, fileName, (currentPosition + 1).toString()).then((file) {
+      if (file != null) {
+        textList.insertOne(
+            currentPosition,
+            getBeforeText(currentController),
+            getSelectText(currentController),
+            getAfterText(currentController),
+            CustomTypeList(
+                flag: TypeFlag.image,
+                imageUrl: file,
+                actualIndex: currentPosition + 1));
+        setState(() {});
+      }
+    });
   }
 
   String getAfterText(TextEditingController controller) {
