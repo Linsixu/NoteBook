@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:note_book/file/file_function.dart';
+import 'package:note_book/file/save_details_content_function.dart';
 import 'package:note_book/model/selected_position.dart';
 import 'package:note_book/utils/custom_type_list.dart';
 import 'package:note_book/utils/rich_text_list.dart';
@@ -19,85 +21,109 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  RichTextList<CustomTypeList> textList = RichTextList()..initial();
+  RichTextList textList = RichTextList(List<TextEntry>())..initial();
   int currentPosition = 0;
   TextEditingController currentController;
+  Selected selected;
+  bool isload = false;
+  String fileName;
 
   @override
   Widget build(BuildContext context) {
-    Selected selected = ModalRoute.of(context).settings.arguments;
-    String fileName = selected.fileName + "-" + selected.position.toString();
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Container(
-        child: ListView.builder(
-          itemCount: textList.size,
-          itemBuilder: (BuildContext context, int position) {
-            textList.list[position].key ??= CustomTypeList();
-            if (textList.list[position].key.flag == TypeFlag.text) {
-              return TextItem(position, textList.list[position],
-                  (index, controller) {
-                currentPosition = index;
-                currentController = controller;
-              });
-            } else if (textList.list[position].key.flag == TypeFlag.image) {
-              return Stack(
-                children: <Widget>[
-                  Container(
-                    child: Image(
-                        image:
-                            FileImageEx(File(textList.list[position].key.imageUrl))),
-                  ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: IconButton(
-                        icon: Icon(Icons.cancel),
-                        iconSize: 35,
-                        color: Colors.black38,
-                        onPressed: () {
-                          deleteImage(textList.list[position].key.imageUrl).then((result) {
-                            if (result) {
-                              showToast("删除成功");
-                              textList.remove(position);
-                              setState(() {});
-                            } else {
-                              showToast("删除失败");
-                            }
-                          });
-                        }),
-                  ),
-                ],
-              );
-            }
-          },
-          scrollDirection: Axis.vertical,
+    selected = ModalRoute.of(context).settings.arguments;
+    fileName = selected.fileName + "-" + selected.position.toString();
+    if (!isload) {
+      getDetailsData(fileName).then((data) {
+        isload = true;
+//        Navigator.pop;
+        if (data.isNotEmpty) {
+          try {
+            final map = json.decode(data);
+            var localData = RichTextList.fromJson(map);
+            textList.listValue.clear();
+            textList.listValue.addAll(localData.listValue);
+            setState(() {});
+          } catch (e) {
+            print("e=$e");
+          }
+        }
+      });
+    }
+    return WillPopScope(
+      onWillPop: _requestPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title),
         ),
+        body: Container(
+          child: ListView.builder(
+            itemCount: textList.size,
+            itemBuilder: (BuildContext context, int position) {
+              textList.list[position].key ??= CustomTypeList();
+              if (textList.list[position].key.flag == TypeFlag.text) {
+                return TextItem(position, textList.list[position],
+                    (index, controller) {
+                  currentPosition = index;
+                  currentController = controller;
+                });
+              } else if (textList.list[position].key.flag == TypeFlag.image) {
+                return Stack(
+                  children: <Widget>[
+                    Container(
+                      child: Image(
+                          image: FileImageEx(
+                              File(textList.list[position].key.imageUrl))),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: IconButton(
+                          icon: Icon(Icons.cancel),
+                          iconSize: 35,
+                          color: Colors.black38,
+                          onPressed: () {
+                            deleteImage(textList.list[position].key.imageUrl)
+                                .then((result) {
+                              if (result) {
+                                showToast("删除成功");
+                                textList.remove(position);
+                                setState(() {});
+                              } else {
+                                showToast("删除失败");
+                              }
+                            });
+                          }),
+                    ),
+                  ],
+                );
+              }
+            },
+            scrollDirection: Axis.vertical,
+          ),
+        ),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            FloatingActionButton(
+              heroTag: "single",
+              onPressed: () {
+                if (currentController == null) return;
+                _takePhoto(fileName);
+              },
+              tooltip: '相机',
+              child: Icon(Icons.camera),
+            ),
+            FloatingActionButton(
+              heroTag: "multi",
+              onPressed: () {
+                _openGallery(fileName);
+              },
+              tooltip: '图库',
+              child: Icon(Icons.photo),
+            ),
+          ],
+        ), // This trailing comma makes auto-formatting nicer for build methods.
       ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          FloatingActionButton(
-            heroTag: "single",
-            onPressed: () {
-              if (currentController == null) return;
-              _takePhoto(fileName);
-            },
-            tooltip: '相机',
-            child: Icon(Icons.camera),
-          ),
-          FloatingActionButton(
-            heroTag: "multi",
-            onPressed: () {
-              _openGallery(fileName);
-            },
-            tooltip: '图库',
-            child: Icon(Icons.photo),
-          ),
-        ],
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 
@@ -137,7 +163,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 flag: TypeFlag.image,
                 imageUrl: file.path,
                 actualIndex: currentPosition + 1));
-//        print("${convert.jsonEncode(textList.list[currentPosition + 1].key.toJson())}");
         setState(() {});
       }
     });
@@ -154,11 +179,25 @@ class _MyHomePageState extends State<MyHomePage> {
   String getBeforeText(TextEditingController controller) {
     return controller?.selection?.textBefore(controller.text);
   }
+
+  Future<bool> _requestPop() {
+    showLoadingDialog(context, "正在保存……");
+    String contents = convert.jsonEncode(textList.toJson());
+    saveDetailsData(contents, fileName).then((result) {
+      Navigator.of(context).pop();
+      if (result) {
+        showToast("保存成功");
+      } else {
+        showToast("保存失败");
+      }
+    });
+    return new Future.value(false);
+  }
 }
 
 class TextItem extends StatelessWidget {
   final int index;
-  final TextEntry<CustomTypeList, String> _entry;
+  final TextEntry _entry;
   final Function focusCallBack;
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
