@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:note_book/file/file_function.dart';
@@ -6,6 +8,7 @@ import 'package:note_book/utils/custom_type_list.dart';
 import 'package:note_book/utils/rich_text_list.dart';
 import 'package:note_book/utils/show_dialog_helper.dart';
 import 'package:note_book/weight/fix_image.dart';
+import 'dart:convert' as convert;
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -45,7 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Container(
                     child: Image(
                         image:
-                            FileImageEx(textList.list[position].key.imageUrl)),
+                            FileImageEx(File(textList.list[position].key.imageUrl))),
                   ),
                   Positioned(
                     top: 0,
@@ -55,11 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         iconSize: 35,
                         color: Colors.black38,
                         onPressed: () {
-                          deleteImage(
-                                  fileName,
-                                  textList.list[position].key.actualIndex
-                                      .toString())
-                              .then((result) {
+                          deleteImage(textList.list[position].key.imageUrl).then((result) {
                             if (result) {
                               showToast("删除成功");
                               textList.remove(position);
@@ -114,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
               getAfterText(currentController),
               CustomTypeList(
                   flag: TypeFlag.image,
-                  imageUrl: file,
+                  imageUrl: file.path,
                   actualIndex: currentPosition + 1));
           setState(() {});
         }
@@ -136,8 +135,9 @@ class _MyHomePageState extends State<MyHomePage> {
             getAfterText(currentController),
             CustomTypeList(
                 flag: TypeFlag.image,
-                imageUrl: file,
+                imageUrl: file.path,
                 actualIndex: currentPosition + 1));
+//        print("${convert.jsonEncode(textList.list[currentPosition + 1].key.toJson())}");
         setState(() {});
       }
     });

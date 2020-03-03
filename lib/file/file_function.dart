@@ -24,9 +24,8 @@ Future<File> saveImage(File file, String fileName, String position) async {
   return result;
 }
 
-Future<bool> deleteImage(String fileName, String position) async {
-  String directory = await _getImageFileName();
-  File file = File(getImagePath(directory, fileName, position));
+Future<bool> deleteImage(String filePath) async {
+  File file = File(filePath);
   bool result = await file.exists();
   bool deleteResult = false;
   if (result) {
