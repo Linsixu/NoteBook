@@ -71,6 +71,7 @@ class _MyNoteListWidgetState extends State<NoteListWidget> {
         child: ListView.separated(
             itemBuilder: (BuildContext context, int index) {
               return GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () {
                   showToast('${_localList.directory.title[index]}');
                 },
