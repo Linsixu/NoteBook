@@ -21,8 +21,12 @@ RichTextList _$RichTextListFromJson(Map<String, dynamic> json) {
   return RichTextList((json['listValue'] as List)
       ?.map((e) =>
           e == null ? null : TextEntry.fromJson(e as Map<String, dynamic>))
-      ?.toList());
+      ?.toList())
+    ..currentImagePosition = json['currentImagePosition'] as int;
 }
 
 Map<String, dynamic> _$RichTextListToJson(RichTextList instance) =>
-    <String, dynamic>{'listValue': instance.listValue};
+    <String, dynamic>{
+      'listValue': instance.listValue,
+      'currentImagePosition': instance.currentImagePosition
+    };

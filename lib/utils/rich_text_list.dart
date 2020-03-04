@@ -20,6 +20,7 @@ class TextEntry {
 @JsonSerializable()
 class RichTextList {
   List<TextEntry> listValue = [];
+  int currentImagePosition = 0;
 
   factory RichTextList.fromJson(Map<String, dynamic> json) =>
       _$RichTextListFromJson(json);

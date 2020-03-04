@@ -47,6 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
             final map = json.decode(data);
             var localData = RichTextList.fromJson(map);
             textList.listValue.clear();
+            textList.currentImagePosition = localData.currentImagePosition;
             textList.listValue.addAll(localData.listValue);
             setState(() {});
           } catch (e) {
@@ -62,55 +63,56 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
         ),
         body: MyLoadingWidget(
-          isShow: isLoadingData,
-          text: "正在从本地读取数据",
-          child: Container(
-            child: ListView.builder(
-              itemCount: textList.size,
-              itemBuilder: (BuildContext context, int position) {
-                textList.list[position].key ??= CustomTypeList();
-                if (textList.list[position].key.flag == TypeFlag.text) {
-                  return TextItem(position, textList.list[position],
-                          (index, controller) {
-                        currentPosition = index;
-                        currentController = controller;
-                      });
-                } else if (textList.list[position].key.flag == TypeFlag.image) {
-                  return Stack(
-                    children: <Widget>[
-                      Container(
-                        child: Image(
-                            image: FileImageEx(
-                                File(textList.list[position].key.imageUrl))),
-                      ),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: IconButton(
-                            icon: Icon(Icons.cancel),
-                            iconSize: 35,
-                            color: Colors.black38,
-                            onPressed: () {
-                              deleteImage(textList.list[position].key.imageUrl)
-                                  .then((result) {
-                                if (result) {
-                                  showToast("删除成功");
-                                  textList.remove(position);
-                                  setState(() {});
-                                } else {
-                                  showToast("删除失败");
-                                }
-                              });
-                            }),
-                      ),
-                    ],
-                  );
-                }
-              },
-              scrollDirection: Axis.vertical,
-            ),
-          )
-        ),
+            isShow: isLoadingData,
+            text: "正在从本地读取数据",
+            child: Container(
+              child: ListView.builder(
+                itemCount: textList.size,
+                itemBuilder: (BuildContext context, int position) {
+                  textList.list[position].key ??= CustomTypeList();
+                  if (textList.list[position].key.flag == TypeFlag.text) {
+                    return TextItem(position, textList.list[position],
+                        (index, controller) {
+                      currentPosition = index;
+                      currentController = controller;
+                    });
+                  } else if (textList.list[position].key.flag ==
+                      TypeFlag.image) {
+                    return Stack(
+                      children: <Widget>[
+                        Container(
+                          child: Image(
+                              image: FileImageEx(
+                                  File(textList.list[position].key.imageUrl))),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton(
+                              icon: Icon(Icons.cancel),
+                              iconSize: 35,
+                              color: Colors.black38,
+                              onPressed: () {
+                                deleteImage(
+                                        textList.list[position].key.imageUrl)
+                                    .then((result) {
+                                  if (result) {
+                                    showToast("删除成功");
+                                    textList.remove(position);
+                                    setState(() {});
+                                  } else {
+                                    showToast("删除失败");
+                                  }
+                                });
+                              }),
+                        ),
+                      ],
+                    );
+                  }
+                },
+                scrollDirection: Axis.vertical,
+              ),
+            )),
         floatingActionButton: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
@@ -140,7 +142,8 @@ class _MyHomePageState extends State<MyHomePage> {
   _takePhoto(String fileName) async {
     var image = await ImagePicker.pickImage(source: ImageSource.camera);
     if (image != null) {
-      saveImage(image, fileName, (currentPosition + 1).toString()).then((file) {
+      saveImage(image, fileName, (textList.currentImagePosition + 1).toString())
+          .then((file) {
         if (file != null) {
           textList.insertOne(
               currentPosition,
@@ -151,6 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   flag: TypeFlag.image,
                   imageUrl: file.path,
                   actualIndex: currentPosition + 1));
+          textList.currentImagePosition++;
           setState(() {});
         }
       });
@@ -162,7 +166,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (image == null) return;
     if (currentController == null) return;
     if (currentController == null) return;
-    saveImage(image, fileName, (currentPosition + 1).toString()).then((file) {
+    saveImage(image, fileName, (textList.currentImagePosition + 1).toString())
+        .then((file) {
       if (file != null) {
         textList.insertOne(
             currentPosition,
@@ -173,6 +178,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 flag: TypeFlag.image,
                 imageUrl: file.path,
                 actualIndex: currentPosition + 1));
+        textList.currentImagePosition++;
         setState(() {});
       }
     });
@@ -198,11 +204,10 @@ class _MyHomePageState extends State<MyHomePage> {
       Navigator.of(context).pop();
       if (result) {
         remind = "保存成功";
-
       } else {
         remind = "保存失败";
       }
-      showToast(remind).then((result){
+      showToast(remind).then((result) {
         Navigator.of(context).pop();
       });
     });

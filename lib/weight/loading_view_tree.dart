@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class MyLoadingWidget extends StatelessWidget {
-  Widget child;
-  bool isShow;
+  @required Widget child;
+  @required bool isShow;
   String text;
   List<Widget> children = List<Widget>();
 
@@ -56,8 +56,6 @@ class MyLoadingWidget extends StatelessWidget {
             ),
           )// 创建透明层
       ));
-    } else {
-
     }
     return Stack(children: children);
   }
